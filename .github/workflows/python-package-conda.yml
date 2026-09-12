@@ -14,21 +14,28 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: '3.10'
-    - name: Add conda to system path
+    - name: Install dependencies (conda if available, else pip)
       run: |
-        # $CONDA is an environment variable pointing to the root of the miniconda directory
-        echo $CONDA/bin >> $GITHUB_PATH
-    - name: Install dependencies
-      run: |
-        conda env update --file environment.yml --name base
+        if [ -f environment.yml ]; then
+          echo "environment.yml found — installing via conda"
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+          bash miniconda.sh -b -p $HOME/miniconda
+          echo "$HOME/miniconda/bin" >> $GITHUB_PATH
+          export PATH="$HOME/miniconda/bin:$PATH"
+          source $HOME/miniconda/etc/profile.d/conda.sh || true
+          conda activate base || true
+          conda env update --file environment.yml --name base || conda env create --file environment.yml --name base
+        else
+          echo "No environment.yml — installing dev dependencies via pip"
+          python -m pip install --upgrade pip
+          pip install flake8 pytest
+        fi
     - name: Lint with flake8
       run: |
-        conda install flake8
         # stop the build if there are Python syntax errors or undefined names
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        conda install pytest
         pytest
