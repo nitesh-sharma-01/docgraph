@@ -37,50 +37,28 @@ class MarkdownParser(DocumentParser):
 
         for index, token in enumerate(tokens):
             if token.type == "heading_open":
-                inline = self._next_inline(tokens, index)
-                heading = inline.content.strip() if inline is not None else ""
-                level = self._heading_level(token)
-                current = Section(heading=heading, level=level)
-                sections.append(current)
-                if level == 1 and title is None:
-                    title = heading
-                if inline is not None:
-                    heading_inline_indexes.add(index + 1)
-                    found = self._extract_links(inline.content, inline)
-                    current.links.extend(found)
-                    links.extend(found)
+                current, title = self._handle_heading(
+                    tokens=tokens,
+                    index=index,
+                    token=token,
+                    sections=sections,
+                    links=links,
+                    heading_inline_indexes=heading_inline_indexes,
+                    title=title,
+                )
                 continue
-
             if token.type in {"bullet_list_open", "ordered_list_open"}:
                 list_depth += 1
                 continue
-
             if token.type in {"bullet_list_close", "ordered_list_close"}:
                 list_depth = max(0, list_depth - 1)
                 continue
-
             if token.type == "fence":
-                block = CodeBlock(language=token.info.strip() or None, content=token.content)
-                code_blocks.append(block)
-                self._section(current, sections).code_blocks.append(block)
+                self._handle_fence(token, current, sections, code_blocks)
                 continue
-
             if token.type != "inline" or index in heading_inline_indexes:
                 continue
-
-            text = token.content.strip()
-            if not text:
-                continue
-
-            section = self._section(current, sections)
-            found = self._extract_links(text, token)
-            links.extend(found)
-            section.links.extend(found)
-
-            if list_depth > 0:
-                section.items.append(text)
-            else:
-                section.paragraphs.append(text)
+            self._handle_inline(token, current, sections, links, list_depth)
 
         document_title = str(metadata.get("name") or metadata.get("title") or title or "").strip()
         return Document(
@@ -103,7 +81,62 @@ class MarkdownParser(DocumentParser):
         parsed = yaml.safe_load(raw) or {}
         if not isinstance(parsed, dict):
             raise ValueError("Markdown frontmatter must be a YAML mapping.")
-        return parsed, content[match.end() :]
+        return parsed, content[match.end():]
+
+    def _handle_heading(
+        self,
+        tokens: list[Token],
+        index: int,
+        token: Token,
+        sections: list[Section],
+        links: list[DocumentLink],
+        heading_inline_indexes: set[int],
+        title: str | None,
+    ) -> tuple[Section, str | None]:
+        inline = self._next_inline(tokens, index)
+        heading = inline.content.strip() if inline is not None else ""
+        level = self._heading_level(token)
+        current = Section(heading=heading, level=level)
+        sections.append(current)
+        if level == 1 and title is None:
+            title = heading
+        if inline is not None:
+            heading_inline_indexes.add(index + 1)
+            found = self._extract_links(inline.content, inline)
+            current.links.extend(found)
+            links.extend(found)
+        return current, title
+
+    def _handle_fence(
+        self,
+        token: Token,
+        current: Section | None,
+        sections: list[Section],
+        code_blocks: list[CodeBlock],
+    ) -> None:
+        block = CodeBlock(language=token.info.strip() or None, content=token.content)
+        code_blocks.append(block)
+        self._section(current, sections).code_blocks.append(block)
+
+    def _handle_inline(
+        self,
+        token: Token,
+        current: Section | None,
+        sections: list[Section],
+        links: list[DocumentLink],
+        list_depth: int,
+    ) -> None:
+        text = token.content.strip()
+        if not text:
+            return
+        section = self._section(current, sections)
+        found = self._extract_links(text, token)
+        links.extend(found)
+        section.links.extend(found)
+        if list_depth > 0:
+            section.items.append(text)
+        else:
+            section.paragraphs.append(text)
 
     @staticmethod
     def _next_inline(tokens: list[Token], index: int) -> Token | None:
