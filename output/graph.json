@@ -1,0 +1,199 @@
+{
+  "entities": [
+    {
+      "id": "api-get-v1-orders-orderid",
+      "metadata": {
+        "extracted_from": "APIs"
+      },
+      "name": "GET /v1/orders/{orderId}",
+      "source": "docs/order-service.md",
+      "type": "api"
+    },
+    {
+      "id": "api-post-v1-orders",
+      "metadata": {
+        "extracted_from": "APIs"
+      },
+      "name": "POST /v1/orders",
+      "source": "docs/order-service.md",
+      "type": "api"
+    },
+    {
+      "id": "architecture",
+      "metadata": {},
+      "name": "Architecture",
+      "source": "docs/architecture.md",
+      "type": "document"
+    },
+    {
+      "id": "basic-example",
+      "metadata": {},
+      "name": "Basic Example",
+      "source": "docs/examples/basic.md",
+      "type": "document"
+    },
+    {
+      "id": "commerce-platform",
+      "metadata": {
+        "extracted_from": "frontmatter.owner"
+      },
+      "name": "commerce-platform",
+      "source": "docs/order-service.md",
+      "type": "owner"
+    },
+    {
+      "id": "concepts",
+      "metadata": {},
+      "name": "Concepts",
+      "source": "docs/concepts.md",
+      "type": "document"
+    },
+    {
+      "id": "configuration",
+      "metadata": {},
+      "name": "Configuration",
+      "source": "docs/configuration.md",
+      "type": "document"
+    },
+    {
+      "id": "ontology",
+      "metadata": {},
+      "name": "Ontology",
+      "source": "docs/ontology.md",
+      "type": "document"
+    },
+    {
+      "id": "order-service",
+      "metadata": {
+        "id": "order-service",
+        "name": "Order Service",
+        "owner": "commerce-platform",
+        "type": "service"
+      },
+      "name": "Order Service",
+      "source": "docs/order-service.md",
+      "type": "service"
+    },
+    {
+      "id": "ordercreatedevent",
+      "metadata": {
+        "extracted_from": "Publishes"
+      },
+      "name": "OrderCreatedEvent",
+      "source": "docs/order-service.md",
+      "type": "event"
+    },
+    {
+      "id": "payment-service",
+      "metadata": {
+        "extracted_from": "Depends On"
+      },
+      "name": "Payment Service",
+      "source": "docs/order-service.md",
+      "type": "service"
+    },
+    {
+      "id": "paymentcompletedevent",
+      "metadata": {
+        "extracted_from": "Consumes"
+      },
+      "name": "PaymentCompletedEvent",
+      "source": "docs/order-service.md",
+      "type": "event"
+    },
+    {
+      "id": "postgresql",
+      "metadata": {
+        "extracted_from": "Database"
+      },
+      "name": "PostgreSQL",
+      "source": "docs/order-service.md",
+      "type": "database"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0"
+  },
+  "relationships": [
+    {
+      "confidence": 1.0,
+      "metadata": {
+        "extracted_from": "Consumes"
+      },
+      "relation": "CONSUMES",
+      "source": "order-service",
+      "source_document": "docs/order-service.md",
+      "target": "paymentcompletedevent"
+    },
+    {
+      "confidence": 1.0,
+      "metadata": {
+        "extracted_from": "Depends On"
+      },
+      "relation": "DEPENDS_ON",
+      "source": "order-service",
+      "source_document": "docs/order-service.md",
+      "target": "payment-service"
+    },
+    {
+      "confidence": 1.0,
+      "metadata": {
+        "extracted_from": "Depends On"
+      },
+      "relation": "DEPENDS_ON",
+      "source": "order-service",
+      "source_document": "docs/order-service.md",
+      "target": "postgresql"
+    },
+    {
+      "confidence": 1.0,
+      "metadata": {
+        "extracted_from": "APIs"
+      },
+      "relation": "EXPOSES_API",
+      "source": "order-service",
+      "source_document": "docs/order-service.md",
+      "target": "api-get-v1-orders-orderid"
+    },
+    {
+      "confidence": 1.0,
+      "metadata": {
+        "extracted_from": "APIs"
+      },
+      "relation": "EXPOSES_API",
+      "source": "order-service",
+      "source_document": "docs/order-service.md",
+      "target": "api-post-v1-orders"
+    },
+    {
+      "confidence": 1.0,
+      "metadata": {
+        "extracted_from": "frontmatter.owner"
+      },
+      "relation": "OWNED_BY",
+      "source": "order-service",
+      "source_document": "docs/order-service.md",
+      "target": "commerce-platform"
+    },
+    {
+      "confidence": 1.0,
+      "metadata": {
+        "extracted_from": "Publishes"
+      },
+      "relation": "PUBLISHES",
+      "source": "order-service",
+      "source_document": "docs/order-service.md",
+      "target": "ordercreatedevent"
+    },
+    {
+      "confidence": 1.0,
+      "metadata": {
+        "extracted_from": "Database"
+      },
+      "relation": "STORES_IN",
+      "source": "order-service",
+      "source_document": "docs/order-service.md",
+      "target": "postgresql"
+    }
+  ]
+}

@@ -211,35 +211,37 @@ Additional providers can be added without changing the core graph engine.
 ```mermaid
 flowchart TD
 
-    A[Markdown / Documentation] --> B[Document Parser]
+    A[Documentation] --> B[Document Parser]
 
-    B --> C[Extraction Pipeline]
+    B --> C[Normalized Document]
 
-    C --> D[Rule Based Extraction]
+    C --> D{Extraction Strategy}
 
-    D --> E[Ontology Validation]
+    D -->|Deterministic| E[Rule Extractor]
+    D -->|AI| F[AI Model]
+    D -->|Hybrid| E
 
-    E --> F[Knowledge Graph]
+    E --> G[Extracted Knowledge]
 
-    C --> G{Semantic Ambiguity?}
+    E --> H{Needs Semantic Enrichment?}
 
-    G -->|No| E
+    H -->|Yes| F
+    H -->|No| G
 
-    G -->|Yes| H[Optional Model Provider]
-
-    H --> I[Structured Model Output]
+    F --> I[Structured Model Output]
 
     I --> J[Schema Validation]
 
-    J --> E
+    G --> J
 
-    F --> K[NetworkX]
+    J --> K[Ontology Validation]
 
-    F --> L[JSON]
+    K --> L[Knowledge Graph]
 
-    F --> M[SQLite]
-
-    F --> N[Future Backends]
+    L --> M[NetworkX]
+    L --> N[JSON]
+    L --> O[SQLite]
+    L --> P[Future Graph Backends]
 ```
 
 DocGraph separates the core pipeline into independent layers:
@@ -414,6 +416,57 @@ PUBLISHES       14
 CONSUMES        17
 STORES_IN        6
 ```
+
+---
+
+## 6. Agent integration setup (context retrieval)
+
+Use DocGraph as a local retrieval index for your AI agent.
+
+Prerequisites:
+
+* Python virtual environment with project dependencies installed
+* `docgraph.yaml` configured with valid `source.path`, `ontology.path`, and `output.path`
+* Graph built at least once
+
+Build and inspect:
+
+```bash
+docgraph build -c docgraph.yaml
+docgraph stats -c docgraph.yaml
+```
+
+With the default starter config, the graph is written to:
+
+```text
+./output/graph.json
+```
+
+Recommended runtime flow for an AI agent:
+
+1. Load `./output/graph.json` at startup (or cache it with a reload strategy).
+2. For each user query, match relevant nodes by `id`, `name`, `type`, and text fields.
+3. Expand 1-2 hop neighbors through edges to collect related context.
+4. Rank and cap results (for example top 10 nodes, top 20 edges).
+5. Send only that compact subgraph to the LLM as grounded context.
+
+Example context payload shape:
+
+```json
+{
+  "query": "Which services consume PaymentCompletedEvent?",
+  "matched_node_ids": ["payment-completed-event"],
+  "context_nodes": [
+    {"id": "order-service", "type": "service", "name": "Order Service"},
+    {"id": "payment-completed-event", "type": "event", "name": "PaymentCompletedEvent"}
+  ],
+  "context_edges": [
+    {"source": "order-service", "relation": "CONSUMES", "target": "payment-completed-event", "confidence": 1.0}
+  ]
+}
+```
+
+This keeps prompts small and makes answers traceable to graph evidence instead of ungrounded guesses.
 
 ---
 

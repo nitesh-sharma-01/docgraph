@@ -1,0 +1,12 @@
+source:
+  path: ./docs
+  format: markdown
+ontology:
+  path: ./ontology.yaml
+extraction:
+  strategy: deterministic
+graph:
+  backend: networkx
+output:
+  format: json
+  path: ./output/graph.json

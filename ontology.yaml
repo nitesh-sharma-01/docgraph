@@ -1,0 +1,49 @@
+entities:
+  document:
+    description: Generic documentation artifact
+  service:
+    description: Software service or microservice
+  database:
+    description: Persistent data store
+  event:
+    description: Domain or integration event
+  api:
+    description: API endpoint
+  queue:
+    description: Queue, topic, or message broker
+  owner:
+    description: Team or person that owns an entity
+relationships:
+  DEPENDS_ON:
+    source:
+    - service
+    - document
+    target:
+    - service
+    - database
+    - queue
+  PUBLISHES:
+    source:
+    - service
+    - document
+    target: event
+  CONSUMES:
+    source:
+    - service
+    - document
+    target: event
+  STORES_IN:
+    source:
+    - service
+    - document
+    target: database
+  EXPOSES_API:
+    source:
+    - service
+    - document
+    target: api
+  OWNED_BY:
+    source:
+    - service
+    - document
+    target: owner
