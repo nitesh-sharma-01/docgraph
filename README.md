@@ -470,6 +470,108 @@ This keeps prompts small and makes answers traceable to graph evidence instead o
 
 ---
 
+## 7. Semantic enrichment (model provider setup)
+
+DocGraph supports optional model-backed extraction through `ModelExtractor`. The current CLI (`docgraph build`) still runs the deterministic `RuleExtractor`, so semantic enrichment is currently configured in Python code.
+
+### Prerequisites
+
+* Base install:
+
+```bash
+pip install -e .
+```
+
+* Optional model providers:
+
+```bash
+pip install -e ".[openai]"
+```
+
+For Ollama, run an Ollama server locally (default: `http://localhost:11434`) and pull a model, for example `llama3.1`.
+
+### Configuration (docgraph.yaml)
+
+You can declare model intent in config:
+
+```yaml
+extraction:
+  strategy: hybrid
+model:
+  provider: openai   # or ollama
+  name: gpt-4o-mini # example; replace with your model
+```
+
+`strategy` and `model` are parsed by config models, but the default CLI build path does not yet auto-wire providers from this config.
+
+### Python integration example
+
+Use this when you need semantic enrichment today:
+
+```python
+from pathlib import Path
+
+from docgraph.config import DocGraphConfig, resolve_path
+from docgraph.core.graph import NetworkXGraph
+from docgraph.extraction.model import ModelExtractor
+from docgraph.extraction.pipeline import ExtractionPipeline
+from docgraph.extraction.rule import RuleExtractor
+from docgraph.models.ollama import OllamaModel
+from docgraph.models.openai import OpenAIModel
+from docgraph.parser.markdown import MarkdownParser
+from docgraph.storage.json import JSONGraphStore
+from docgraph.validation.schema import Ontology
+from docgraph.validation.validator import OntologyValidator
+
+config_path = Path("docgraph.yaml").resolve()
+cfg = DocGraphConfig.from_yaml(config_path)
+base_dir = config_path.parent
+
+source_path = resolve_path(base_dir, cfg.source.path)
+ontology_path = resolve_path(base_dir, cfg.ontology.path)
+output_path = resolve_path(base_dir, cfg.output.path)
+
+ontology = Ontology.from_yaml(ontology_path)
+validator = OntologyValidator(ontology)
+parser = MarkdownParser()
+docs = [
+    parser.parse(path.read_text(encoding="utf-8"), str(path.relative_to(base_dir)))
+    for path in sorted(source_path.rglob("*.md"))
+]
+
+# Choose provider
+# model = OpenAIModel(name="gpt-4o-mini")
+model = OllamaModel(name="llama3.1")
+
+rule_result = ExtractionPipeline(
+    extractor=RuleExtractor(),
+    validator=validator,
+    graph=NetworkXGraph(),
+).run(docs)
+
+model_result = ExtractionPipeline(
+    extractor=ModelExtractor(model=model),
+    validator=validator,
+    graph=NetworkXGraph(),
+).run(docs)
+
+# Merge valid results (simple union by pipeline graph import/export strategy)
+graph = NetworkXGraph()
+graph.add_entities(rule_result.valid.entities + model_result.valid.entities)
+graph.add_relationships(rule_result.valid.relationships + model_result.valid.relationships)
+
+JSONGraphStore().save(graph, output_path)
+print(f"Exported semantic-enriched graph to {output_path}")
+```
+
+### Environment notes
+
+* OpenAI: set `OPENAI_API_KEY` before running.
+* Ollama: ensure local server is running and model is available.
+* Model output must be strict JSON containing top-level `entities` and `relationships` arrays; invalid model output is rejected during parsing/validation.
+
+---
+
 # Documentation Format
 
 DocGraph uses Markdown as a human-friendly source format.
